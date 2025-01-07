@@ -76,7 +76,7 @@ var (
 			Name: "kafka_consumergroup_health",
 			Help: "Consumer group state (0=UNKNOWN, 1=PREPARING_REBALANCE, 2=COMPLETING_REBALANCE, 3=STABLE, 4=DEAD, 5=EMPTY)",
 		},
-		[]string{"group", "state"},
+		[]string{"consumergroup", "state"},
 	)
 )
 

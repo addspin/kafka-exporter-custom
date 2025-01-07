@@ -1,6 +1,6 @@
 metrics:
-  scrape_interval: "30s" # Интервал сбора метрик.
-  retry_interval: "10s" # Интервал повторных попыток при ошибке.  
+  scrape_interval: 30s # Интервал сбора метрик.
+  retry_interval: 10s # Интервал повторных попыток при ошибке.  
 
 kafka:
   brokers:
