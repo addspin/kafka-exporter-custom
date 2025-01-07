@@ -134,13 +134,12 @@ func main() {
 			updateMetrics(client)
 			client.Close()
 
-			// Нормальный интервал сбора метрик
 			time.Sleep(scrapeInterval)
 		}
 	}()
-
+	log.Println("Starting server on port", viper.GetInt("exporterPort"))
 	http.Handle("/metrics", promhttp.Handler())
-	log.Fatal(http.ListenAndServe(":9877", nil))
+	log.Fatal(http.ListenAndServe(":"+strconv.Itoa(viper.GetInt("exporterPort")), nil))
 }
 
 func updateMetrics(client sarama.Client) {
@@ -205,21 +204,17 @@ func updateMetrics(client sarama.Client) {
 				lag := latestOffset - currentOffset
 				partitionStr := strconv.FormatInt(int64(partition), 10)
 
-				// Существующие метрики
 				consumerGroupLag.WithLabelValues(group, topic, partitionStr).Set(float64(lag))
 				consumerGroupCurrentOffset.WithLabelValues(group, topic, partitionStr).Set(float64(currentOffset))
 
-				// Новая метрика для текущего смещения партиции
 				topicPartitionCurrentOffset.WithLabelValues(topic, partitionStr).Set(float64(latestOffset))
 
 				topicLagSum += float64(lag)
 				topicCurrentOffsetSum += float64(currentOffset)
 			}
 
-			// Существующая метрика
 			consumerGroupLagSum.WithLabelValues(group, topic).Set(topicLagSum)
 
-			// Новая метрика суммы текущих смещений
 			consumerGroupCurrentOffsetSum.WithLabelValues(group, topic).Set(topicCurrentOffsetSum)
 		}
 	}
