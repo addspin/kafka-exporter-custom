@@ -1,0 +1,9 @@
+services:
+  kafka-exporter-custom:
+    image: kafka-exporter-custom
+    container_name: kafka-exporter-custom
+    restart: always
+    ports:
+      - "9877:9877"
+    volumes:
+      - /path/to/config.yaml:/app/config.yaml

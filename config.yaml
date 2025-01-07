@@ -1,6 +1,8 @@
 metrics:
-  scrape_interval: 30s # Интервал сбора метрик.
-  retry_interval: 10s # Интервал повторных попыток при ошибке.  
+# Интервал сбора метрик.
+  scrape_interval: 30s
+# Интервал повторных попыток при ошибке.  
+  retry_interval: 10s
 
 kafka:
   brokers:
@@ -12,10 +14,11 @@ kafka:
     - "192.168.41.106:9092"
   sasl:
     enabled: true
-    handshake: true # Флаг, указывающий на необходимость выполнения рукопожатия SASL перед отправкой запроса (default: true).
+    # Флаг, указывающий на необходимость выполнения рукопожатия SASL перед отправкой запроса (default: true).
+    handshake: true 
     mechanism: "PLAIN"
     username: "broker"
-    password: "ec7H3zwCJyfWxkrm"
+    password: "xxx"
   tls:
     enabled: false
   timeout:
