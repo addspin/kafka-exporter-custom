@@ -126,7 +126,6 @@ func main() {
 			client, err := sarama.NewClient(brokers, config)
 			if err != nil {
 				log.Printf("Error creating client: %v", err)
-				// Используем отдельный интервал для повторных попыток при ошибке
 				time.Sleep(retryInterval)
 				continue
 			}
@@ -143,12 +142,13 @@ func main() {
 }
 
 func updateMetrics(client sarama.Client) {
+	log.Printf("Starting metrics update...")
+
 	admin, err := sarama.NewClusterAdminFromClient(client)
 	if err != nil {
 		log.Printf("Error creating admin client: %v", err)
 		return
 	}
-	defer admin.Close()
 
 	groups, err := admin.ListConsumerGroups()
 	if err != nil {
@@ -218,4 +218,5 @@ func updateMetrics(client sarama.Client) {
 			consumerGroupCurrentOffsetSum.WithLabelValues(group, topic).Set(topicCurrentOffsetSum)
 		}
 	}
+	log.Printf("Metrics update completed successfully")
 }
