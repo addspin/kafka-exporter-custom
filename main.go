@@ -206,15 +206,11 @@ func updateMetrics(client sarama.Client) {
 
 				consumerGroupLag.WithLabelValues(group, topic, partitionStr).Set(float64(lag))
 				consumerGroupCurrentOffset.WithLabelValues(group, topic, partitionStr).Set(float64(currentOffset))
-
 				topicPartitionCurrentOffset.WithLabelValues(topic, partitionStr).Set(float64(latestOffset))
-
 				topicLagSum += float64(lag)
 				topicCurrentOffsetSum += float64(currentOffset)
 			}
-
 			consumerGroupLagSum.WithLabelValues(group, topic).Set(topicLagSum)
-
 			consumerGroupCurrentOffsetSum.WithLabelValues(group, topic).Set(topicCurrentOffsetSum)
 		}
 	}
