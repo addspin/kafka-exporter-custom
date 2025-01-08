@@ -3,7 +3,10 @@ package main
 import (
 	"log"
 	"net/http"
+	"os"
+	"os/signal"
 	"strconv"
+	"syscall"
 	"time"
 
 	"github.com/IBM/sarama"
@@ -120,35 +123,70 @@ func main() {
 	// Адреса брокеров из вашего кластера
 	brokers := viper.GetStringSlice("kafka.brokers")
 
-	// Запускаем сбор метрик в отдельной горутине
+	var client sarama.Client
+	var err error
+
+	// Функция для создания клиента
+	createClient := func() error {
+		client, err = sarama.NewClient(brokers, config)
+		if err != nil {
+			log.Printf("Error creating client: %v", err)
+			return err
+		}
+		log.Println("Kafka client created successfully")
+		return nil
+	}
+
+	// Первичное создание клиента
+	if err := createClient(); err != nil {
+		log.Fatalf("Initial client creation failed: %v", err)
+	}
+
 	go func() {
 		for {
-			client, err := sarama.NewClient(brokers, config)
-			if err != nil {
-				log.Printf("Error creating client: %v", err)
-				// Используем отдельный интервал для повторных попыток при ошибке
-				time.Sleep(retryInterval)
-				continue
+			if err := client.RefreshMetadata(); err != nil {
+				log.Printf("Connection lost, attempting to reconnect: %v", err)
+				if err := createClient(); err != nil {
+					log.Printf("Reconnection failed: %v", err)
+					time.Sleep(retryInterval)
+					continue
+				}
 			}
-
 			updateMetrics(client)
-			client.Close()
-
 			time.Sleep(scrapeInterval)
 		}
 	}()
-	log.Println("Starting server on port", viper.GetInt("exporterPort"))
+
+	// Обработка сигналов для корректного закрытия
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+
+	go func() {
+		sig := <-c
+		log.Printf("Received signal %v, shutting down...", sig)
+		if err := client.Close(); err != nil {
+			log.Printf("Error closing client: %v", err)
+		}
+		os.Exit(0)
+	}()
+
+	log.Printf("Starting server on port %d", viper.GetInt("exporterPort"))
 	http.Handle("/metrics", promhttp.Handler())
-	log.Fatal(http.ListenAndServe(":"+strconv.Itoa(viper.GetInt("exporterPort")), nil))
+	if err := http.ListenAndServe(":"+strconv.Itoa(viper.GetInt("exporterPort")), nil); err != nil {
+		log.Printf("HTTP server error: %v", err)
+		client.Close()
+		os.Exit(1)
+	}
 }
 
 func updateMetrics(client sarama.Client) {
+	log.Printf("Starting metrics update...")
+
 	admin, err := sarama.NewClusterAdminFromClient(client)
 	if err != nil {
 		log.Printf("Error creating admin client: %v", err)
 		return
 	}
-	defer admin.Close()
 
 	groups, err := admin.ListConsumerGroups()
 	if err != nil {
@@ -218,4 +256,5 @@ func updateMetrics(client sarama.Client) {
 			consumerGroupCurrentOffsetSum.WithLabelValues(group, topic).Set(topicCurrentOffsetSum)
 		}
 	}
+	log.Printf("Metrics update completed successfully")
 }

@@ -18,7 +18,7 @@ kafka:
     handshake: true 
     mechanism: "PLAIN"
     username: "broker"
-    password: "xxx"
+    password: "xxxxx"
   tls:
     enabled: false
   timeout:
